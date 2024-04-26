@@ -1,18 +1,18 @@
 import { Server } from "socket.io";
 import { Redis } from "ioredis";
-import { channel } from "diagnostics_channel";
+import {produceMessage} from "./kafka";
 
 const pub = new Redis({
-    host: '',
-    port: 1,
-    username: '',
+    host: 'url',
+    port: 22625,
+    username: 'default',
     password: ''
 });
 const sub = new Redis(
     {
-        host: '',
-        port: 1,
-        username: '',
+        host: 'url',
+        port: 22625,
+        username: 'default',
         password: ''
     }
 );
@@ -42,10 +42,20 @@ class SocketService {
             });
         });
 
-        sub.on('message', (channel, message) => {
+        sub.on('message', async (channel, message) => {
             if (channel === 'MESSAGES') {
                 console.log("New Message from redis", message);
                 io.emit('message', message);
+                // DB storage
+                // await prismaClient.message.create({
+                //     data: {
+                //         text: message
+                //     }
+                // });
+
+                //Send to kafka
+                await produceMessage(message);
+                console.log("Message produced to Kafka Broker");
             }
         });
 
